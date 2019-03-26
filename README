@@ -1,0 +1,10 @@
+# jvmavlink
+
+## Improvements
+
+- Support generating from parent repo's definition directory
+- Support output generated library in parent repo
+
+## TODO
+
+- Support generating from a file
