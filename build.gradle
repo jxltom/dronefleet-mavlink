@@ -19,7 +19,7 @@ test {
 def genSrc = "src/main/java-gen"
 
 generateDialect {
-    definitions file('definition-xml')
+    definitions file('../message_definitions/v1.0')
     generatedSources file(genSrc)
 }
 
