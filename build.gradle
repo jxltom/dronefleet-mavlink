@@ -16,7 +16,7 @@ test {
     systemProperty "java.library.path", file("${project('clibrary-test-tool').buildDir}/libs/testtool/shared").absolutePath
 }
 
-def genSrc = "src/main/java-gen"
+def genSrc = "../output2/DronefleetJava"
 
 generateDialect {
     definitions file('../message_definitions/v1.0')
