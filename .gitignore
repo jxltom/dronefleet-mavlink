@@ -117,3 +117,6 @@ secring.gpg
 classes/
 
 local.properties
+*.prefs
+.classpath
+.project
