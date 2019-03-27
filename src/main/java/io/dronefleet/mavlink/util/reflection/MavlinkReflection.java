@@ -10,10 +10,15 @@ import java.util.Optional;
 public class MavlinkReflection {
 
     public static int getEnumValue(Enum entry) {
-        return getEnumEntry(entry)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "The specified entry is not annotated with @MavlinkEntryInfo"))
-                .value();
+        try {
+          return getEnumEntry(entry)
+                  .orElseThrow(() -> new IllegalArgumentException(
+                          "The specified entry is not annotated with @MavlinkEntryInfo"))
+                  .value();
+        } catch (Throwable throwable){
+          throwable.printStackTrace();
+          return -1;
+        }
     }
 
     public static Optional<MavlinkEntryInfo> getEnumEntry(Enum entry) {
