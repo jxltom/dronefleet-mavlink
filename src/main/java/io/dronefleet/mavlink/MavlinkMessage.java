@@ -18,6 +18,10 @@ public class MavlinkMessage<T> {
         this.payload = payload;
     }
 
+    public boolean isMavlink2Message(){
+        return packet.isMavlink2();
+    }
+
     /**
      * Returns the sequence of this message.
      */
