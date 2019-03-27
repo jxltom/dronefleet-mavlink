@@ -59,7 +59,7 @@ public class MavlinkGeneratorTask extends DefaultTask {
 
         //noinspection ConstantConditions
         MavlinkGeneratorFactory generatorFactory = new MavlinkGeneratorFactory(
-                "io.dronefleet.mavlink",
+                "im.helmsman.mavlink",
                 Arrays.asList(definitions.listFiles()));
         MavlinkGenerator generator = generatorFactory.newGenerator();
         generator.generate().forEach(f -> {
