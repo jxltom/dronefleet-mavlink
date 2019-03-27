@@ -59,15 +59,15 @@ public class ReflectionPayloadDeserializer implements MavlinkPayloadDeserializer
                                 0);
                         System.arraycopy(payload, offset, data, 0, copyLength);
 
-                        Class fieldType = Optional.of(method.getParameterTypes())
+                        try {
+                            Class fieldType = Optional.of(method.getParameterTypes())
                                 .filter(types -> types.length == 1)
                                 .map(types -> types[0])
                                 .orElseThrow(() -> new MavlinkSerializationException(
-                                        "Method " + method.getName() + " of " + builder.getClass().getName()
-                                                + " is annotated with @MavlinkFieldInfo, however does not " +
-                                                "accept a single parameter."));
+                                    "Method " + method.getName() + " of " + builder.getClass().getName()
+                                        + " is annotated with @MavlinkFieldInfo, however does not " +
+                                        "accept a single parameter."));
 
-                        try {
                             if (EnumValue.class.isAssignableFrom(fieldType)) {
                                 method.invoke(builder, enumValue(field.enumType(), data, field.signed()));
                             } else if (int.class.isAssignableFrom(fieldType)) {
@@ -85,6 +85,8 @@ public class ReflectionPayloadDeserializer implements MavlinkPayloadDeserializer
                             }
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             e.printStackTrace();
+                        } catch (Throwable throwable){
+                            throwable.printStackTrace();
                         }
                     });
 
@@ -92,7 +94,10 @@ public class ReflectionPayloadDeserializer implements MavlinkPayloadDeserializer
             return (T) builder.getClass().getMethod("build").invoke(builder);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             e.printStackTrace();
+        } catch (Throwable throwable){
+            throwable.printStackTrace();
         }
+
         return null;
     }
 
