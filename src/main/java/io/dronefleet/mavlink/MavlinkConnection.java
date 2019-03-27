@@ -1,20 +1,20 @@
 package io.dronefleet.mavlink;
 
 import io.dronefleet.mavlink.annotations.MavlinkMessageInfo;
-import io.dronefleet.mavlink.ardupilotmega.ArdupilotmegaDialect;
-import io.dronefleet.mavlink.asluav.AsluavDialect;
-import io.dronefleet.mavlink.autoquad.AutoquadDialect;
-import io.dronefleet.mavlink.common.CommonDialect;
-import io.dronefleet.mavlink.common.Heartbeat;
-import io.dronefleet.mavlink.common.MavAutopilot;
-import io.dronefleet.mavlink.paparazzi.PaparazziDialect;
+import im.helmsman.mavlink.ardupilotmega.ArdupilotmegaDialect;
+import im.helmsman.mavlink.asluav.AsluavDialect;
+import im.helmsman.mavlink.autoquad.AutoquadDialect;
+import im.helmsman.mavlink.common.CommonDialect;
+import im.helmsman.mavlink.common.Heartbeat;
+import im.helmsman.mavlink.common.MavAutopilot;
+import im.helmsman.mavlink.paparazzi.PaparazziDialect;
 import io.dronefleet.mavlink.protocol.MavlinkPacket;
 import io.dronefleet.mavlink.protocol.MavlinkPacketReader;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadDeserializer;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadSerializer;
 import io.dronefleet.mavlink.serialization.payload.reflection.ReflectionPayloadDeserializer;
 import io.dronefleet.mavlink.serialization.payload.reflection.ReflectionPayloadSerializer;
-import io.dronefleet.mavlink.slugs.SlugsDialect;
+import im.helmsman.mavlink.slugs.SlugsDialect;
 
 import java.io.EOFException;
 import java.io.IOException;
