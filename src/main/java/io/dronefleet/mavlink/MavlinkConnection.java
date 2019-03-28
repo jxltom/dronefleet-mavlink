@@ -129,7 +129,7 @@ public class MavlinkConnection {
     private final Map<Integer, MavlinkDialect> systemDialects;
 
     /**
-     * A list of default dialects.
+     * A list of default dialects used for decoding packets.
      */
     private final List<MavlinkDialect> defaultDialects;
 
@@ -199,6 +199,18 @@ public class MavlinkConnection {
     }
 
     /**
+     * Adds a default dialect. The added dialect will be used to decode the packets
+     * without relying on detecting dialects by heartbeat.
+     *
+     * @param dialect The dialect to add.
+     * @return This Mavlink connection.
+     */
+    public MavlinkConnection addDefaultDialect(MavlinkDialect dialect) {
+        defaultDialects.add(dialect);
+        return this;
+    }
+
+    /**
      * <p>Reads a single message from this connection. This method drops messages, attempting to read the next
      * message when given the following conditions:</p>
      * <p>
@@ -228,7 +240,7 @@ public class MavlinkConnection {
                 // or we don't support the dialect of its autopilot, then we use the common dialect.
                 MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
 
-                // Try to get dialect from default dialects instead of only from heartbeat
+                // Try to get dialect from default dialects instead of only detecting from heartbeat
                 for (MavlinkDialect mavlinkDialect:defaultDialects){
                     if (mavlinkDialect.supports(packet.getMessageId())){
                         dialect = mavlinkDialect;
