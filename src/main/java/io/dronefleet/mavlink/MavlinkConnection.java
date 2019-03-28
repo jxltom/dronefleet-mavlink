@@ -193,11 +193,6 @@ public class MavlinkConnection {
         writeLock = new ReentrantLock();
     }
 
-    public MavlinkConnection addDefaultDialect(MavlinkDialect dialect) {
-        defaultDialects.add(dialect);
-        return this;
-    }
-
     /**
      * Adds a default dialect. The added dialect will be used to decode the packets
      * without relying on detecting dialects by heartbeat.
