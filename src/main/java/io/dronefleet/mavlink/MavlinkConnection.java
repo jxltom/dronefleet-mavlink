@@ -240,7 +240,8 @@ public class MavlinkConnection {
                 // or we don't support the dialect of its autopilot, then we use the common dialect.
                 MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
 
-                // Try to get dialect from default dialects instead of only detecting from heartbeat
+                // Try to get supported dialect from default dialects
+                // instead of system dialects which are detected from heartbeat
                 for (MavlinkDialect mavlinkDialect:defaultDialects){
                     if (mavlinkDialect.supports(packet.getMessageId())){
                         dialect = mavlinkDialect;
