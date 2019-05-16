@@ -11,6 +11,8 @@ import im.helmsman.mavlink.common.MavAutopilot;
 import im.helmsman.mavlink.paparazzi.PaparazziDialect;
 import io.dronefleet.mavlink.protocol.MavlinkPacket;
 import io.dronefleet.mavlink.protocol.MavlinkPacketReader;
+import io.dronefleet.mavlink.protocol.util.MavLinkPayload;
+import io.dronefleet.mavlink.protocol.util.MavLinkUnpackUtil;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadDeserializer;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadSerializer;
 import io.dronefleet.mavlink.serialization.payload.reflection.ReflectionPayloadDeserializer;
@@ -265,8 +267,8 @@ public class MavlinkConnection {
                 return null;
             }
 
-              Object payload = deserializer.deserialize(packet.getPayload(), messageType);
-
+//              Object payload = deserializer.deserialize(packet.getPayload(), messageType);
+            Object payload = MavLinkUnpackUtil.unpack(packet);
             // If we received a Heartbeat message, then we can use that in order to update the dialect
             // for this system.
             if (payload instanceof Heartbeat) {
