@@ -1,5 +1,6 @@
 package io.dronefleet.mavlink;
 
+import android.util.Log;
 import io.dronefleet.mavlink.annotations.MavlinkMessageInfo;
 import im.helmsman.mavlink.ardupilotmega.ArdupilotmegaDialect;
 import im.helmsman.mavlink.asluav.AsluavDialect;
@@ -24,6 +25,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -226,65 +229,79 @@ public class MavlinkConnection {
      * @throws EOFException When the stream ends.
      * @throws IOException  If there has been an error reading from the stream.
      */
-    public MavlinkMessage next() throws IOException {
+    private LinkedBlockingQueue<MavlinkPacket> mavlinkPackets = new LinkedBlockingQueue<>(500);
+
+    private int error = 0;
+    public MavlinkMessage decodePacket() throws IOException {
+        try {
+            MavlinkPacket packet = mavlinkPackets.take();
+
+//             Get the dialect for the system that sent this packet. If we don't know which dialect it is,
+//             or we don't support the dialect of its autopilot, then we use the common dialect.
+            MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
+
+            // Try to get supported dialect from default dialects
+            // instead of system dialects which are detected from heartbeat
+            for (MavlinkDialect mavlinkDialect:defaultDialects){
+                if (mavlinkDialect.supports(packet.getMessageId())){
+                    dialect = mavlinkDialect;
+                    break;
+                }
+            }
+
+            if (!dialect.supports(packet.getMessageId())) {
+                return null;
+            }
+
+//             Get the message type and deserialize the payload.
+            Class<?> messageType = dialect.resolve(packet.getMessageId());
+            MavlinkMessageInfo messageInfo = messageType.getAnnotation(MavlinkMessageInfo.class);
+
+
+            if (!packet.validateCrc(messageInfo.crc())) {
+                // This packet did not pass CRC validation. It may be dropped.
+                error++;
+                Log.i("validateCrc","fail,Sequence:" + packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + error);
+                return null;
+            }
+
+              Object payload = deserializer.deserialize(packet.getPayload(), messageType);
+
+            // If we received a Heartbeat message, then we can use that in order to update the dialect
+            // for this system.
+            if (payload instanceof Heartbeat) {
+                Heartbeat heartbeat = (Heartbeat) payload;
+                if (dialects.containsKey(heartbeat.autopilot().entry())) {
+                    systemDialects.put(packet.getSystemId(), dialects.get(heartbeat.autopilot().entry()));
+                }
+            }
+
+            if (packet.isMavlink2()) {
+                //noinspection unchecked
+                return new Mavlink2Message(packet, payload);
+            } else {
+                //noinspection unchecked
+                return new MavlinkMessage(packet, payload);
+            }
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    private int packetTotal = 0;
+    public void next() throws IOException {
         readLock.lock();
         try {
             MavlinkPacket packet;
             while ((packet = reader.next()) != null) {
-                // Get the dialect for the system that sent this packet. If we don't know which dialect it is,
-                // or we don't support the dialect of its autopilot, then we use the common dialect.
-                MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
-
-                // Try to get supported dialect from default dialects
-                // instead of system dialects which are detected from heartbeat
-                for (MavlinkDialect mavlinkDialect:defaultDialects){
-                    if (mavlinkDialect.supports(packet.getMessageId())){
-                        dialect = mavlinkDialect;
-                        break;
-                    }
-                }
-
-                // If the packet is not supported by the dialect, then we drop the packet and continue.
-                // Unfortunately, because of the inadequate design of Mavlink's CRC validation which incorporates
-                // information from underlying implementations that use the message protocol, we are unable to
-                // check if the packet is actually a valid one, despite not understanding it.
-                // So we have to assume that we might have received a corrupted packet, and instead, try again
-                // at the next byte rather than skipping the entire message.
-                if (!dialect.supports(packet.getMessageId())) {
-                    reader.drop();
-                    continue;
-                }
-
-                // Get the message type and deserialize the payload.
-                Class<?> messageType = dialect.resolve(packet.getMessageId());
-                MavlinkMessageInfo messageInfo = messageType.getAnnotation(MavlinkMessageInfo.class);
-                if (!packet.validateCrc(messageInfo.crc())) {
-                    // This packet did not pass CRC validation. It may be dropped.
-                    reader.drop();
-                    continue;
-                }
-                Object payload = deserializer.deserialize(packet.getPayload(), messageType);
-
-                // If we received a Heartbeat message, then we can use that in order to update the dialect
-                // for this system.
-                if (payload instanceof Heartbeat) {
-                    Heartbeat heartbeat = (Heartbeat) payload;
-                    if (dialects.containsKey(heartbeat.autopilot().entry())) {
-                        systemDialects.put(packet.getSystemId(), dialects.get(heartbeat.autopilot().entry()));
-                    }
-                }
-
-                if (packet.isMavlink2()) {
-                    //noinspection unchecked
-                    return new Mavlink2Message(packet, payload);
-                } else {
-                    //noinspection unchecked
-                    return new MavlinkMessage(packet, payload);
-                }
+                packetTotal++;
+                Log.i("MavlinkPacket",packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + packetTotal);
+                mavlinkPackets.put(packet);
             }
-
             throw new EOFException("End of stream");
-        } finally {
+        } catch (InterruptedException e){
+
+        }finally {
             readLock.unlock();
         }
     }

@@ -1,5 +1,6 @@
 package io.dronefleet.mavlink.protocol;
 
+import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -18,15 +19,17 @@ import java.io.InputStream;
  * and CRC check the returned frames, issuing calls to {@link #drop()} when validation fails.
  */
 public class MavlinkFrameReader {
-    private final TransactionalInputStream in;
+//    private final TransactionalInputStream in;
 
+    private final CacheInputStream cacheInputStream;
     /**
      * Creates a mavlink frame reader for the specified input stream.
      *
      * @param in The input stream to read mavlink frames from.
      */
     public MavlinkFrameReader(InputStream in) {
-        this.in = new TransactionalInputStream(in, 280);
+//        this.in = new TransactionalInputStream(in, 280);
+        cacheInputStream = new CacheInputStream(in,280);
     }
 
     /**
@@ -42,19 +45,22 @@ public class MavlinkFrameReader {
         int payloadLength;
         int incompatibleFlags;
 
-        in.commit();
-        while ((versionMarker = in.read()) != -1) {
-            if ((payloadLength = in.read()) == -1) {
+        cacheInputStream.commit();
+        while ((versionMarker = cacheInputStream.read()) != -1) {
+            if ((payloadLength = cacheInputStream.read()) == -1) {
                 return false;
             }
             switch (versionMarker) {
-                case MavlinkPacket.MAGIC_V1:
-                    return in.advance(6 + payloadLength);
+//                case MavlinkPacket.MAGIC_V1:
+//                    return cacheInputStream.advance(6 + payloadLength);
                 case MavlinkPacket.MAGIC_V2:
-                    return (incompatibleFlags = in.read()) != -1
-                            && in.advance(9 + payloadLength + (incompatibleFlags & 1) * 13);
+                    incompatibleFlags = cacheInputStream.read();
+                    int len = 9 + payloadLength + (incompatibleFlags & 1) * 13;
+                    return incompatibleFlags != -1 && cacheInputStream.read(len) == len;
                 default:
-                    drop();
+                    cacheInputStream.commit();
+                    Log.i("MavlinkFrameReader","error frame");
+                    break;
             }
         }
         return false;
@@ -66,7 +72,7 @@ public class MavlinkFrameReader {
      * @return The read frame's bytes, or an empty byte array if no frame was read yet.
      */
     public byte[] frame() {
-        return in.getBuffer();
+        return cacheInputStream.getBuffer();
     }
 
     /**
@@ -75,8 +81,8 @@ public class MavlinkFrameReader {
      * @throws IOException if an IO error occurs.
      */
     public void drop() throws IOException {
-        in.rollback();
-        in.skip(1);
-        in.commit();
+//        in.rollback();
+//        in.skip(1);
+//        in.commit();
     }
 }
