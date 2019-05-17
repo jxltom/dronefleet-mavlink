@@ -18,7 +18,6 @@ public class CacheInputStream{
   private int pos = 0;
   private int datatotal = 0;
   private int size;
-  private ByteArrayInputStream byteArrayInputStream;
   public CacheInputStream(InputStream inputStream,int size){
     this.inputStream = inputStream;
     this.size = size;

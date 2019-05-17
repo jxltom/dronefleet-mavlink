@@ -28,7 +28,6 @@ public class MavlinkFrameReader {
      * @param in The input stream to read mavlink frames from.
      */
     public MavlinkFrameReader(InputStream in) {
-//        this.in = new TransactionalInputStream(in, 280);
         cacheInputStream = new CacheInputStream(in,280);
     }
 
@@ -51,12 +50,13 @@ public class MavlinkFrameReader {
                 return false;
             }
             switch (versionMarker) {
-//                case MavlinkPacket.MAGIC_V1:
-//                    return cacheInputStream.advance(6 + payloadLength);
+                case MavlinkPacket.MAGIC_V1:
+                    int m1Len = 6 + payloadLength;
+                    return cacheInputStream.read(m1Len) == m1Len;
                 case MavlinkPacket.MAGIC_V2:
                     incompatibleFlags = cacheInputStream.read();
-                    int len = 9 + payloadLength + (incompatibleFlags & 1) * 13;
-                    return incompatibleFlags != -1 && cacheInputStream.read(len) == len;
+                    int m2Len = 9 + payloadLength + (incompatibleFlags & 1) * 13;
+                    return incompatibleFlags != -1 && cacheInputStream.read(m2Len) == m2Len;
                 default:
                     cacheInputStream.commit();
                     Log.i("MavlinkFrameReader","error frame");

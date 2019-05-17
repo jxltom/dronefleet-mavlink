@@ -1,5 +1,6 @@
 package io.dronefleet.mavlink;
 
+import android.annotation.TargetApi;
 import android.util.Log;
 import io.dronefleet.mavlink.annotations.MavlinkMessageInfo;
 import im.helmsman.mavlink.ardupilotmega.ArdupilotmegaDialect;
@@ -231,9 +232,10 @@ public class MavlinkConnection {
      * @throws EOFException When the stream ends.
      * @throws IOException  If there has been an error reading from the stream.
      */
-    private LinkedBlockingQueue<MavlinkPacket> mavlinkPackets = new LinkedBlockingQueue<>(500);
+    private LinkedBlockingQueue<MavlinkPacket> mavlinkPackets = new LinkedBlockingQueue<>(50);
 
     private int error = 0;
+
     public MavlinkMessage decodePacket() throws IOException {
         try {
             MavlinkPacket packet = mavlinkPackets.take();
@@ -267,7 +269,6 @@ public class MavlinkConnection {
                 return null;
             }
 
-//              Object payload = deserializer.deserialize(packet.getPayload(), messageType);
             Object payload = MavLinkUnpackUtil.unpack(packet);
             // If we received a Heartbeat message, then we can use that in order to update the dialect
             // for this system.
@@ -290,15 +291,13 @@ public class MavlinkConnection {
         }
         return null;
     }
-    private int packetTotal = 0;
+
     public void next() throws IOException {
         readLock.lock();
         try {
             MavlinkPacket packet;
             while ((packet = reader.next()) != null) {
-                packetTotal++;
-                Log.i("MavlinkPacket",packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + packetTotal);
-                mavlinkPackets.put(packet);
+                  mavlinkPackets.put(packet);
             }
             throw new EOFException("End of stream");
         } catch (InterruptedException e){
