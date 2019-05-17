@@ -6,7 +6,6 @@ import im.helmsman.mavlink.ardupilotmega.ArdupilotmegaDialect;
 import im.helmsman.mavlink.asluav.AsluavDialect;
 import im.helmsman.mavlink.autoquad.AutoquadDialect;
 import im.helmsman.mavlink.common.CommonDialect;
-import im.helmsman.mavlink.common.Heartbeat;
 import im.helmsman.mavlink.common.MavAutopilot;
 import im.helmsman.mavlink.paparazzi.PaparazziDialect;
 import io.dronefleet.mavlink.protocol.MavlinkPacket;
