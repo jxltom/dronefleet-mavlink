@@ -1,6 +1,5 @@
 package io.dronefleet.mavlink;
 
-import android.annotation.TargetApi;
 import android.util.Log;
 import io.dronefleet.mavlink.annotations.MavlinkMessageInfo;
 import im.helmsman.mavlink.ardupilotmega.ArdupilotmegaDialect;
@@ -12,8 +11,7 @@ import im.helmsman.mavlink.common.MavAutopilot;
 import im.helmsman.mavlink.paparazzi.PaparazziDialect;
 import io.dronefleet.mavlink.protocol.MavlinkPacket;
 import io.dronefleet.mavlink.protocol.MavlinkPacketReader;
-import io.dronefleet.mavlink.protocol.util.MavLinkPayload;
-import io.dronefleet.mavlink.protocol.util.MavLinkUnpackUtil;
+import helmsman.mavlink.unpack.MavLinkUnpackUtil;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadDeserializer;
 import io.dronefleet.mavlink.serialization.payload.MavlinkPayloadSerializer;
 import io.dronefleet.mavlink.serialization.payload.reflection.ReflectionPayloadDeserializer;
@@ -28,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -236,7 +233,7 @@ public class MavlinkConnection {
 
     private int error = 0;
 
-    public MavlinkMessage decodePacket() throws IOException {
+    public MavlinkPacket validatePacket() throws IOException {
         try {
             MavlinkPacket packet = mavlinkPackets.take();
 
@@ -268,24 +265,7 @@ public class MavlinkConnection {
                 Log.i("validateCrc","fail,Sequence:" + packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + error);
                 return null;
             }
-
-            Object payload = MavLinkUnpackUtil.unpack(packet);
-            // If we received a Heartbeat message, then we can use that in order to update the dialect
-            // for this system.
-            if (payload instanceof Heartbeat) {
-                Heartbeat heartbeat = (Heartbeat) payload;
-                if (dialects.containsKey(heartbeat.autopilot().entry())) {
-                    systemDialects.put(packet.getSystemId(), dialects.get(heartbeat.autopilot().entry()));
-                }
-            }
-
-            if (packet.isMavlink2()) {
-                //noinspection unchecked
-                return new Mavlink2Message(packet, payload);
-            } else {
-                //noinspection unchecked
-                return new MavlinkMessage(packet, payload);
-            }
+            return packet;
         }catch (InterruptedException e){
             e.printStackTrace();
         }

@@ -13,7 +13,7 @@ public class MavlinkMessage<T> {
     private final MavlinkPacket packet;
     private final T payload;
 
-    MavlinkMessage(MavlinkPacket packet, T payload) {
+    public MavlinkMessage(MavlinkPacket packet, T payload) {
         this.packet = packet;
         this.payload = payload;
     }

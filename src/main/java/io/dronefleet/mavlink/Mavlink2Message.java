@@ -11,7 +11,7 @@ public class Mavlink2Message<T> extends MavlinkMessage<T> {
 
     private final MavlinkPacket packet;
 
-    Mavlink2Message(MavlinkPacket packet, T payload) {
+    public Mavlink2Message(MavlinkPacket packet, T payload) {
         super(packet, payload);
         this.packet = packet;
     }
