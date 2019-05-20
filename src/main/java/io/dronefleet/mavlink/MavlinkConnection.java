@@ -271,6 +271,7 @@ public class MavlinkConnection {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public void next() throws IOException {
         readLock.lock();
         try {

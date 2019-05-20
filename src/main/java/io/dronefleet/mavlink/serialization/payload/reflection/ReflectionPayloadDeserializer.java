@@ -147,6 +147,7 @@ public class ReflectionPayloadDeserializer implements MavlinkPayloadDeserializer
         return new String(data, StandardCharsets.UTF_8);
     }
 
+    @SuppressWarnings("unchecked")
     private Object enumValue(Class<?> enumType, byte[] data, boolean signed) {
         return EnumValue.create(
                 (Class<? extends Enum>) enumType,
