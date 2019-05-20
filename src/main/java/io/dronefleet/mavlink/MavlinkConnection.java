@@ -178,6 +178,10 @@ public class MavlinkConnection {
      */
     private final Lock writeLock;
 
+    private LinkedBlockingQueue<MavlinkPacket> mavlinkPackets = new LinkedBlockingQueue<>(50);
+
+    private int error = 0;
+
     MavlinkConnection(
             MavlinkPacketReader reader,
             OutputStream out,
@@ -207,6 +211,44 @@ public class MavlinkConnection {
         return this;
     }
 
+    public MavlinkPacket validatePacket() throws IOException {
+        try {
+            MavlinkPacket packet = mavlinkPackets.take();
+
+            // Get the dialect for the system that sent this packet. If we don't know which dialect it is,
+            // or we don't support the dialect of its autopilot, then we use the common dialect.
+            MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
+
+            // Try to get supported dialect from default dialects
+            // instead of system dialects which are detected from heartbeat
+            for (MavlinkDialect mavlinkDialect:defaultDialects){
+                if (mavlinkDialect.supports(packet.getMessageId())){
+                    dialect = mavlinkDialect;
+                    break;
+                }
+            }
+
+            if (!dialect.supports(packet.getMessageId())) {
+                return null;
+            }
+
+            // Get the message type and deserialize the payload.
+            Class<?> messageType = dialect.resolve(packet.getMessageId());
+            MavlinkMessageInfo messageInfo = messageType.getAnnotation(MavlinkMessageInfo.class);
+
+            if (!packet.validateCrc(messageInfo.crc())) {
+                // This packet did not pass CRC validation. It may be dropped.
+                error++;
+                Log.i("validateCrc","fail,Sequence:" + packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + error);
+                return null;
+            }
+            return packet;
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     /**
      * <p>Reads a single message from this connection. This method drops messages, attempting to read the next
      * message when given the following conditions:</p>
@@ -228,49 +270,6 @@ public class MavlinkConnection {
      * @throws EOFException When the stream ends.
      * @throws IOException  If there has been an error reading from the stream.
      */
-    private LinkedBlockingQueue<MavlinkPacket> mavlinkPackets = new LinkedBlockingQueue<>(50);
-
-    private int error = 0;
-
-    public MavlinkPacket validatePacket() throws IOException {
-        try {
-            MavlinkPacket packet = mavlinkPackets.take();
-
-//             Get the dialect for the system that sent this packet. If we don't know which dialect it is,
-//             or we don't support the dialect of its autopilot, then we use the common dialect.
-            MavlinkDialect dialect = systemDialects.getOrDefault(packet.getSystemId(), COMMON_DIALECT);
-
-            // Try to get supported dialect from default dialects
-            // instead of system dialects which are detected from heartbeat
-            for (MavlinkDialect mavlinkDialect:defaultDialects){
-                if (mavlinkDialect.supports(packet.getMessageId())){
-                    dialect = mavlinkDialect;
-                    break;
-                }
-            }
-
-            if (!dialect.supports(packet.getMessageId())) {
-                return null;
-            }
-
-//             Get the message type and deserialize the payload.
-            Class<?> messageType = dialect.resolve(packet.getMessageId());
-            MavlinkMessageInfo messageInfo = messageType.getAnnotation(MavlinkMessageInfo.class);
-
-
-            if (!packet.validateCrc(messageInfo.crc())) {
-                // This packet did not pass CRC validation. It may be dropped.
-                error++;
-                Log.i("validateCrc","fail,Sequence:" + packet.getSequence() + "len:" + packet.getRawBytes()[1] + "total:" + error);
-                return null;
-            }
-            return packet;
-        }catch (InterruptedException e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     @SuppressWarnings("unchecked")
     public void next() throws IOException {
         readLock.lock();
